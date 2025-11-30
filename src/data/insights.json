@@ -1,0 +1,62 @@
+[
+  {
+    "id": 1,
+    "title": "Hostel Life: Expectation vs Reality",
+    "content": "From midnight maggi sessions to last-minute exam prep, hostel life is an adventure like no other. Here's what really happens in college hostels across India...",
+    "videoUrl": "https://www.youtube.com/embed/dQw4w9WgXcQ",
+    "tags": ["hostel", "student life", "reality"],
+    "author": "Campus Insider",
+    "publishedAt": "2024-03-15T09:00:00Z",
+    "thumbnail": "/images/insights/hostel-life.jpg"
+  },
+  {
+    "id": 2,
+    "title": "Top 10 BTech Colleges Below 95 Percentile",
+    "content": "Didn't score above 95? No worries! These excellent engineering colleges offer great placements and infrastructure even at moderate percentiles...",
+    "videoUrl": "https://www.youtube.com/embed/dQw4w9WgXcQ",
+    "tags": ["engineering", "admissions", "rankings"],
+    "author": "Admissions Expert",
+    "publishedAt": "2024-03-14T11:30:00Z",
+    "thumbnail": "/images/insights/btech-colleges.jpg"
+  },
+  {
+    "id": 3,
+    "title": "Life at DTU in 60 Seconds",
+    "content": "Experience a day in the life of DTU student - from 8 AM classes to late-night coding sessions in the innovation lab...",
+    "videoUrl": "https://www.youtube.com/embed/dQw4w9WgXcQ",
+    "tags": ["DTU", "campus tour", "student life"],
+    "author": "DTU Student",
+    "publishedAt": "2024-03-13T14:20:00Z",
+    "thumbnail": "/images/insights/dtu-life.jpg"
+  },
+  {
+    "id": 4,
+    "title": "MBA vs MS: Which is Better for You?",
+    "content": "Confused between MBA and MS after engineering? We break down the pros, cons, and career outcomes to help you decide...",
+    "videoUrl": "https://www.youtube.com/embed/dQw4w9WgXcQ",
+    "tags": ["MBA", "MS", "career guidance"],
+    "author": "Career Counselor",
+    "publishedAt": "2024-03-12T16:45:00Z",
+    "thumbnail": "/images/insights/mba-vs-ms.jpg"
+  },
+  {
+    "id": 5,
+    "title": "Placement Season Survival Guide",
+    "content": "Tips from students who cracked top companies: resume building, interview prep, and handling rejection like a pro...",
+    "videoUrl": "https://www.youtube.com/embed/dQw4w9WgXcQ",
+    "tags": ["placements", "careers", "tips"],
+    "author": "Placement Cell",
+    "publishedAt": "2024-03-11T10:15:00Z",
+    "thumbnail": "/images/insights/placements.jpg"
+  },
+  {
+    "id": 6,
+    "title": "Hidden Gems: Colleges with Amazing ROI",
+    "content": "These lesser-known colleges offer incredible return on investment with low fees and high placement packages...",
+    "videoUrl": "https://www.youtube.com/embed/dQw4w9WgXcQ",
+    "tags": ["ROI", "budget colleges", "placements"],
+    "author": "Finance Guru",
+    "publishedAt": "2024-03-10T13:30:00Z",
+    "thumbnail": "/images/insights/hidden-gems.jpg"
+  }
+]

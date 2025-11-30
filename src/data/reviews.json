@@ -1,0 +1,142 @@
+[
+  {
+    "id": 1,
+    "collegeId": 1,
+    "user": "Rahul Sharma",
+    "comment": "Great placements! Companies like Microsoft and Google visit campus. Faculty is supportive and campus life is amazing.",
+    "ratings": {
+      "placement": 5,
+      "faculty": 4,
+      "campus": 4,
+      "roi": 5
+    },
+    "createdAt": "2024-03-15T10:30:00Z",
+    "anonymous": false
+  },
+  {
+    "id": 2,
+    "collegeId": 1,
+    "user": "Anonymous",
+    "comment": "Academic pressure is high but worth it. Hostel facilities need improvement.",
+    "ratings": {
+      "placement": 5,
+      "faculty": 4,
+      "campus": 3,
+      "roi": 4
+    },
+    "createdAt": "2024-03-10T14:20:00Z",
+    "anonymous": true
+  },
+  {
+    "id": 3,
+    "collegeId": 2,
+    "user": "Priya Singh",
+    "comment": "Good campus culture and decent placements. Faculty is knowledgeable but sometimes strict.",
+    "ratings": {
+      "placement": 4,
+      "faculty": 4,
+      "campus": 5,
+      "roi": 4
+    },
+    "createdAt": "2024-03-12T09:15:00Z",
+    "anonymous": false
+  },
+  {
+    "id": 4,
+    "collegeId": 3,
+    "user": "Amit Kumar",
+    "comment": "Average college with decent faculty. Placement opportunities are limited compared to top colleges.",
+    "ratings": {
+      "placement": 3,
+      "faculty": 4,
+      "campus": 3,
+      "roi": 3
+    },
+    "createdAt": "2024-03-08T16:45:00Z",
+    "anonymous": false
+  },
+  {
+    "id": 5,
+    "collegeId": 4,
+    "user": "Sneha Reddy",
+    "comment": "Life-changing experience! World-class education and incredible peer group. Research opportunities are amazing.",
+    "ratings": {
+      "placement": 5,
+      "faculty": 5,
+      "campus": 5,
+      "roi": 5
+    },
+    "createdAt": "2024-03-14T11:30:00Z",
+    "anonymous": false
+  },
+  {
+    "id": 6,
+    "collegeId": 5,
+    "user": "Kunal Mehta",
+    "comment": "Great for CS/IT students. Modern curriculum and good industry exposure. Campus is still developing.",
+    "ratings": {
+      "placement": 5,
+      "faculty": 4,
+      "campus": 4,
+      "roi": 4
+    },
+    "createdAt": "2024-03-11T13:20:00Z",
+    "anonymous": false
+  },
+  {
+    "id": 7,
+    "collegeId": 6,
+    "user": "Anonymous",
+    "comment": "Expensive but worth it. Great infrastructure and placements. Work-life balance can be challenging.",
+    "ratings": {
+      "placement": 5,
+      "faculty": 4,
+      "campus": 4,
+      "roi": 4
+    },
+    "createdAt": "2024-03-09T15:10:00Z",
+    "anonymous": true
+  },
+  {
+    "id": 8,
+    "collegeId": 7,
+    "user": "Neha Patel",
+    "comment": "Beautiful campus with amazing facilities. Placements are good but not as good as top IITs.",
+    "ratings": {
+      "placement": 4,
+      "faculty": 4,
+      "campus": 5,
+      "roi": 3
+    },
+    "createdAt": "2024-03-13T12:40:00Z",
+    "anonymous": false
+  },
+  {
+    "id": 9,
+    "collegeId": 8,
+    "user": "Rohit Gupta",
+    "comment": "Good exposure and international collaborations. Campus is huge and facilities are modern.",
+    "ratings": {
+      "placement": 4,
+      "faculty": 4,
+      "campus": 5,
+      "roi": 3
+    },
+    "createdAt": "2024-03-07T10:25:00Z",
+    "anonymous": false
+  },
+  {
+    "id": 10,
+    "collegeId": 9,
+    "user": "Anjali Nair",
+    "comment": "Best B-school in India! Amazing case study methodology and peer learning. Network is invaluable.",
+    "ratings": {
+      "placement": 5,
+      "faculty": 5,
+      "campus": 5,
+      "roi": 5
+    },
+    "createdAt": "2024-03-16T08:45:00Z",
+    "anonymous": false
+  }
+]
