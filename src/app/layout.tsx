@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Header from "@/components/layout/header";
-import { Inter, Poppins } from "next/font/google";
+import localFont from "next/font/local";
 
 export const metadata: Metadata = {
   title: "College Insights - Honest College Reviews & Rankings",
@@ -16,31 +16,34 @@ export const metadata: Metadata = {
   },
 };
 
-const inter = Inter({
-  subsets: ["latin"],
+const inter = localFont({
+  src: [
+    { path: "../../public/fonts/inter/Inter_18pt-Regular.ttf", weight: "400" },
+    { path: "../../public/fonts/inter/Inter_18pt-Medium.ttf", weight: "500" },
+    { path: "../../public/fonts/inter/Inter_18pt-SemiBold.ttf", weight: "600" },
+    { path: "../../public/fonts/inter/Inter_18pt-Bold.ttf", weight: "700" },
+  ],
   variable: "--font-sans",
   display: "swap",
 });
 
-const poppins = Poppins({
-  weight: ["400", "500", "600", "700"],
-  subsets: ["latin"],
+const poppins = localFont({
+  src: [
+    { path: "../../public/fonts/poppins/Poppins-Regular.ttf", weight: "400" },
+    { path: "../../public/fonts/poppins/Poppins-Medium.ttf", weight: "500" },
+    { path: "../../public/fonts/poppins/Poppins-SemiBold.ttf", weight: "600" },
+    { path: "../../public/fonts/poppins/Poppins-Bold.ttf", weight: "700" },
+  ],
   variable: "--font-heading",
   display: "swap",
 });
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} ${poppins.variable} antialiased min-h-screen flex flex-col bg-[#F8FAFB]`}>
         <Header />
-        <main className="flex-1">
-          {children}
-        </main>
+        <main className="flex-1">{children}</main>
       </body>
     </html>
   );

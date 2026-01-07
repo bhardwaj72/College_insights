@@ -100,3 +100,90 @@
     @apply bg-gradient-to-r from-primary to-secondary text-white rounded-2xl rounded-tr-none px-4 py-3 max-w-[80%];
   }
 }
+
+
+
+.input {
+  width: 100%;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: white;
+  font-size: 14px;
+  outline: none;
+}
+.input:focus {
+  border-color: #7c3aed;
+  box-shadow: 0 0 0 3px rgba(124,58,237,.2);
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+.animate-slideUp {
+  animation: slideUp 0.4s ease-out forwards;
+}
+
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+  100% { transform: translateY(0px); }
+}
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+.animate-scaleIn {
+  animation: scaleIn 0.3s ease-out forwards;
+}
+
+.c-input {
+  @apply w-full px-4 py-3 rounded-xl border border-slate-200 
+  bg-slate-50 focus:outline-none focus:ring-2 
+  focus:ring-[#7C3AED]/40 focus:border-[#7C3AED]/60 text-sm;
+}
+
+
+@keyframes ripple {
+  0% { transform: scale(0.8); opacity: 0.6; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+.animate-ripple1 { animation: ripple 2.5s infinite; }
+.animate-ripple2 { animation: ripple 2.5s infinite 0.6s; }
+.animate-ripple3 { animation: ripple 2.5s infinite 1.2s; }
+
+
+body.counselling-open .chatbot-root {
+  display: none;
+}
+
+
+/* News Component Css */
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  animation: marquee 30s linear infinite;
+}
+
+/* 🧲 Pause on hover */
+.group:hover .animate-marquee {
+  animation-play-state: paused;
+}
+
+
+

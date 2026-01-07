@@ -1,9 +1,13 @@
+// src/components/chatbot/chat-buddy.tsx
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
-import { MessageCircle, Send, X, Bot, User } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { useEffect, useRef, useState } from 'react'
+import Image from 'next/image'
+import { Send, X } from 'lucide-react'
+import { collegesData } from '@/data/colleges-normalized'
+import type { College } from '@/components/ui/college-card'
+
+// ---------- Types ----------
 
 interface Message {
   id: string
@@ -12,24 +16,315 @@ interface Message {
   timestamp: Date
 }
 
-interface ChatState {
-  step: 'greeting' | 'course' | 'city' | 'budget' | 'preferences' | 'results'
-  course?: string
-  city?: string
-  budget?: string
-  preferences?: string[]
+interface CollegeRag extends College {
+  ownership?: string
+  userGroup?: string
+  region?: string
+  feesLakh?: number
+  feesDisplay?: string
+  avgPackageDisplay?: string
 }
 
-const COURSE_OPTIONS = ['Engineering', 'MBA', 'Design', 'Law', 'Medical', 'Commerce']
-const CITY_OPTIONS = ['Delhi', 'Bangalore', 'Mumbai', 'Chennai', 'Pune', 'Hyderabad']
-const BUDGET_OPTIONS = ['Under 5L', '5L - 10L', '10L - 20L', 'Above 20L']
+type Step = 'idle' | 'askLocation' | 'askBudget'
+
+interface ConversationState {
+  step: Step
+  baseQuery?: string
+  courseLabel?: string
+  ownership?: 'Private' | 'Government'
+  preferredLocation?: string
+  maxFeesLakh?: number
+}
+
+const ALL_COLLEGES = collegesData as CollegeRag[]
+
+// A quick list of all cities for simple location detection
+const ALL_CITIES = Array.from(new Set(ALL_COLLEGES.map((c) => c.city))).filter(
+  Boolean,
+)
+
+// ---------- RAG Helpers ----------
+
+interface ParsedFilters {
+  ownership?: 'Private' | 'Government'
+  userGroups: string[]
+  courseKeywords: string[]
+  maxFeesLakh?: number
+  preferredRegion?: string
+  preferredCity?: string
+}
+
+function parseBudgetFromText(q: string): number | undefined {
+  const budgetMatch =
+    q.match(/(?:under|below|less than)\s+(\d+(\.\d+)?)\s*(l|lakh|lakhs|lac|lacs)?/i) ||
+    q.match(/(\d+(\.\d+)?)\s*(l|lakh|lakhs|lac|lacs)\s*(?:budget|fees|total)?/i)
+
+  if (!budgetMatch) return undefined
+  const num = parseFloat(budgetMatch[1])
+  if (Number.isNaN(num)) return undefined
+  return num
+}
+
+function parseQueryFilters(qRaw: string): ParsedFilters {
+  const q = qRaw.toLowerCase()
+
+  let ownership: 'Private' | 'Government' | undefined
+  if (q.includes('private')) ownership = 'Private'
+  else if (q.includes('govt') || q.includes('government') || q.includes('public')) {
+    ownership = 'Government'
+  }
+
+  const courseKeywords: string[] = []
+  const userGroups: string[] = []
+
+  if (
+    q.includes('engineering') ||
+    q.includes('b.tech') ||
+    q.includes('btech') ||
+    q.includes('b tech')
+  ) {
+    courseKeywords.push('engineering')
+    userGroups.push('b.tech')
+  }
+  if (q.includes('m.tech') || q.includes('mtech')) {
+    userGroups.push('m.tech')
+  }
+  if (q.includes('mba') || q.includes('management') || q.includes('pgdm')) {
+    userGroups.push('mba')
+  }
+  if (q.includes('medical') || q.includes('mbbs')) {
+    userGroups.push('mbbs')
+  }
+  if (q.includes('law')) {
+    userGroups.push('law')
+  }
+  if (q.includes('design')) {
+    userGroups.push('design')
+  }
+  if (q.includes('commerce') || q.includes('bcom') || q.includes('b.com')) {
+    userGroups.push('commerce')
+  }
+
+  let preferredRegion: string | undefined
+  if (q.includes('south india') || /\bsouth\b/.test(q)) preferredRegion = 'South'
+  else if (q.includes('north india') || /\bnorth\b/.test(q)) preferredRegion = 'North'
+  else if (q.includes('west')) preferredRegion = 'West'
+  else if (q.includes('east')) preferredRegion = 'East'
+  else if (q.includes('central')) preferredRegion = 'Central'
+
+  let preferredCity: string | undefined
+  for (const city of ALL_CITIES) {
+    if (!city) continue
+    if (q.includes(city.toLowerCase())) {
+      preferredCity = city
+      break
+    }
+  }
+
+  const maxFeesLakh = parseBudgetFromText(q)
+
+  return { ownership, userGroups, courseKeywords, maxFeesLakh, preferredRegion, preferredCity }
+}
+
+function scoreCollege(c: CollegeRag) {
+  const placement = c.ratings?.placement ?? 0
+  const faculty = c.ratings?.faculty ?? 0
+  const campus = c.ratings?.campus ?? 0
+  const roi = c.ratings?.roi ?? 0
+  const rating = (placement + faculty + campus) / 3
+  return rating * 2 + roi * 0.05
+}
+
+function applyStrictFilters(
+  base: CollegeRag[],
+  filters: ParsedFilters,
+  lockedCity?: string,
+  lockedBudget?: number,
+): CollegeRag[] {
+  let results = [...base]
+
+  if (filters.ownership) {
+    results = results.filter(
+      (c) => c.ownership?.toLowerCase() === filters.ownership!.toLowerCase(),
+    )
+  }
+
+  if (filters.userGroups.length) {
+    const groupsLower = filters.userGroups.map((g) => g.toLowerCase())
+    results = results.filter((c) => {
+      const ug = c.userGroup?.toLowerCase() ?? ''
+      const tags = (c.courseTags ?? []).map((t) => t.toLowerCase())
+      const hasUserGroup = groupsLower.some((g) => ug.includes(g))
+      const hasEngTag =
+        groupsLower.some((g) => g.includes('b.tech')) &&
+        tags.some(
+          (t) =>
+            t.includes('engineering') ||
+            t.includes('b.tech') ||
+            t.includes('btech'),
+        )
+      return hasUserGroup || hasEngTag
+    })
+  }
+
+  const cityToUse = lockedCity ?? filters.preferredCity
+  if (cityToUse) {
+    results = results.filter((c) => c.city.toLowerCase() === cityToUse.toLowerCase())
+  }
+
+  const maxFees = lockedBudget ?? filters.maxFeesLakh
+  if (maxFees) {
+    results = results.filter((c) => {
+      const f = c.feesLakh ?? 0
+      return f > 0 && f <= maxFees
+    })
+  }
+
+  if (filters.preferredRegion) {
+    results = results.filter(
+      (c) => c.region?.toLowerCase() === filters.preferredRegion!.toLowerCase(),
+    )
+  }
+
+  return results
+}
+
+function findRelevantColleges(
+  query: string,
+  opts?: {
+    lockedCity?: string
+    lockedBudget?: number
+  },
+) {
+  const filters = parseQueryFilters(query)
+
+  // strict pass first
+  let matches = applyStrictFilters(ALL_COLLEGES, filters, opts?.lockedCity, opts?.lockedBudget)
+
+  let relaxed = false
+  if (matches.length === 0) {
+    // relax budget but keep other filters
+    relaxed = true
+    matches = applyStrictFilters(ALL_COLLEGES, { ...filters, maxFeesLakh: undefined })
+  }
+  if (matches.length === 0) {
+    // last fallback – everything
+    relaxed = true
+    matches = [...ALL_COLLEGES]
+  }
+
+  matches.sort((a, b) => scoreCollege(b) - scoreCollege(a))
+  const top = matches.slice(0, 7)
+
+  return { matches: top, filters, relaxed }
+}
+
+function formatAnswer(
+  query: string,
+  opts?: {
+    lockedCity?: string
+    lockedBudget?: number
+  },
+): string {
+  const { matches, filters, relaxed } = findRelevantColleges(query, opts)
+
+  const parts: string[] = []
+
+  if (filters.ownership) {
+    parts.push(
+      filters.ownership === 'Private'
+        ? 'private colleges'
+        : 'government colleges',
+    )
+  }
+
+  if (filters.userGroups.includes('mbbs')) parts.push('for MBBS / Medical')
+  else if (filters.userGroups.includes('mba')) parts.push('for MBA / Management')
+  else if (filters.userGroups.includes('b.tech')) parts.push('for B.Tech / Engineering')
+
+  const cityText =
+    opts?.lockedCity ?? filters.preferredCity
+      ? `in ${(opts?.lockedCity ?? filters.preferredCity)!}`
+      : ''
+
+  const maxFees =
+    opts?.lockedBudget ?? filters.maxFeesLakh
+      ? `with total fees up to about ₹${(opts?.lockedBudget ?? filters.maxFeesLakh)!.toFixed(
+        1,
+      )} Lakh`
+      : ''
+
+  const filterSummary = [parts.join(' '), cityText, maxFees]
+    .filter(Boolean)
+    .join(' ')
+
+  const lines: string[] = []
+
+  if (filterSummary) {
+    lines.push(`Here are some options based on your preferences: ${filterSummary}.`)
+  } else {
+    lines.push('Here are some colleges that best match your query from the current dataset:')
+  }
+
+  if (relaxed && (opts?.lockedCity || opts?.lockedBudget)) {
+    lines.push(
+      'Note: No exact matches were found for all filters, so I relaxed a few conditions to show you the closest options.',
+    )
+  }
+
+  lines.push('')
+
+  matches.forEach((c, idx) => {
+    const feesLakh =
+      typeof c.feesLakh === 'number' && c.feesLakh > 0
+        ? `₹${c.feesLakh.toFixed(2)} Lakh`
+        : c.feesDisplay || 'Not available'
+
+    const avgPkg =
+      c.avgPackageDisplay ||
+      (c.avgPackage ? `₹${c.avgPackage.toFixed(2)} LPA` : 'Not available')
+
+    const highlights = (c.courseTags || []).filter(Boolean).slice(0, 3).join(' · ')
+
+    lines.push(`${idx + 1}) ${c.name}`)
+    lines.push(`   📍 ${c.city}, ${c.state}`)
+    lines.push(
+      `   🎓 Type: ${c.ownership || c.type || 'Not specified'} | Course group: ${c.userGroup || 'N/A'
+      }`,
+    )
+    lines.push(`   💰 Fees (approx): ${feesLakh} | 📈 Avg package: ${avgPkg}`)
+    if (highlights) {
+      lines.push(`   🏷 Highlights: ${highlights}`)
+    }
+    lines.push('')
+  })
+
+  lines.push(
+    'You can refine this further on the Explore page using filters like city, course, ownership, and fee range.',
+  )
+
+  return lines.join('\n')
+}
+
+// ---------- Suggested queries ----------
+
+const SUGGESTED_QUERIES = [
+  'Best private engineering colleges under 10L',
+  'Top government medical colleges in India',
+  'Best ROI MBA colleges in India',
+  'Best B.Tech colleges in Bangalore',
+  'Top private engineering colleges with good placements',
+]
+
+// ---------- Component ----------
 
 export default function ChatBuddy() {
   const [isOpen, setIsOpen] = useState(false)
+  const [showTeaser, setShowTeaser] = useState(true)
   const [messages, setMessages] = useState<Message[]>([])
   const [inputText, setInputText] = useState('')
   const [isTyping, setIsTyping] = useState(false)
-  const [chatState, setChatState] = useState<ChatState>({ step: 'greeting' })
+  const [convState, setConvState] = useState<ConversationState>({ step: 'idle' })
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const scrollToBottom = () => {
@@ -41,233 +336,414 @@ export default function ChatBuddy() {
   }, [messages])
 
   const addMessage = (text: string, sender: 'bot' | 'user') => {
-    const message: Message = {
-      id: Date.now().toString(),
-      text,
-      sender,
-      timestamp: new Date()
-    }
-    setMessages(prev => [...prev, message])
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: `${Date.now()}-${Math.random()}`,
+        text,
+        sender,
+        timestamp: new Date(),
+      },
+    ])
   }
 
-  const getBotResponse = (userInput: string, currentState: ChatState): string => {
-    const input = userInput.toLowerCase()
-    
-    switch (currentState.step) {
-      case 'greeting':
-        if (COURSE_OPTIONS.some(course => input.includes(course.toLowerCase()))) {
-          return "Nice choice! ⚙️ Ab batao, kis city me dekh rahe ho — Delhi, Bangalore, ya Mumbai?"
-        }
-        return "Hey! 👋 Main hoon your College Buddy. Batao, kis course me interest hai — Engineering, MBA, Design, Law, Medical, ya Commerce?"
-      
-      case 'course':
-        if (CITY_OPTIONS.some(city => input.includes(city.toLowerCase()))) {
-          return "Perfect! 😎 Budget kaisa hai — Under 5L, 5L-10L, 10L-20L, ya Above 20L?"
-        }
-        return "Course choose karlo pehle! Engineering, MBA, Design, Law, Medical, ya Commerce?"
-      
-      case 'city':
-        if (BUDGET_OPTIONS.some(budget => input.includes(budget.toLowerCase()))) {
-          return "Great! 🔥 Last question — placements zyada important hai ya campus life?"
-        }
-        return "Budget batao please — Under 5L, 5L-10L, 10L-20L, ya Above 20L?"
-      
-      case 'budget':
-        if (input.includes('placement') || input.includes('campus')) {
-          return "Perfect! 🎯 Tumhare liye ye top colleges hain:\n\n1. DTU Delhi - Best placements\n2. NSUT Delhi - Great campus\n3. IIIT Delhi - Tech focused\n\nCompare karna chahte ho?"
-        }
-        return "Batao ki tumhe placements zyada important hai ya campus life?"
-      
-      default:
-        return "Thanks for chatting! Mujhe lagta hai ye colleges tumhare liye perfect hain. Explore karne ke liye upar wale options try karo!"
+  // ---------- Conversation flow ----------
+
+  const detectCourseAndOwnership = (text: string) => {
+    const lower = text.toLowerCase()
+    let courseLabel: string | undefined
+    let ownership: 'Private' | 'Government' | undefined
+
+    if (
+      lower.includes('engineering') ||
+      lower.includes('b.tech') ||
+      lower.includes('btech') ||
+      lower.includes('b tech')
+    ) {
+      courseLabel = 'B.Tech / Engineering'
+    } else if (lower.includes('mba')) {
+      courseLabel = 'MBA / Management'
+    } else if (lower.includes('mbbs') || lower.includes('medical')) {
+      courseLabel = 'MBBS / Medical'
     }
+
+    if (lower.includes('private')) ownership = 'Private'
+    if (lower.includes('govt') || lower.includes('government') || lower.includes('public')) {
+      ownership = 'Government'
+    }
+
+    return { courseLabel, ownership }
   }
 
-  const updateChatState = (userInput: string, currentState: ChatState): ChatState => {
-    const input = userInput.toLowerCase()
-    let newState = { ...currentState }
-    
-    switch (currentState.step) {
-      case 'greeting':
-        if (COURSE_OPTIONS.some(course => input.includes(course.toLowerCase()))) {
-          newState.step = 'course'
-          newState.course = COURSE_OPTIONS.find(course => input.includes(course.toLowerCase()))
-        }
-        break
-      case 'course':
-        if (CITY_OPTIONS.some(city => input.includes(city.toLowerCase()))) {
-          newState.step = 'city'
-          newState.city = CITY_OPTIONS.find(city => input.includes(city.toLowerCase()))
-        }
-        break
-      case 'city':
-        if (BUDGET_OPTIONS.some(budget => input.includes(budget.toLowerCase()))) {
-          newState.step = 'budget'
-          newState.budget = BUDGET_OPTIONS.find(budget => input.includes(budget.toLowerCase()))
-        }
-        break
-      case 'budget':
-        if (input.includes('placement') || input.includes('campus')) {
-          newState.step = 'results'
-          newState.preferences = input.includes('placement') ? ['placements'] : ['campus']
-        }
-        break
-    }
-    
-    return newState
+  const handleDirectAnswer = (text: string) => {
+    const answer = formatAnswer(text)
+    addMessage(answer, 'bot')
   }
 
-  const handleSendMessage = () => {
-    if (!inputText.trim()) return
+  const handleSend = () => {
+    const trimmed = inputText.trim()
+    if (!trimmed) return
 
-    const userMessage = inputText.trim()
-    addMessage(userMessage, 'user')
+    addMessage(trimmed, 'user')
     setInputText('')
     setIsTyping(true)
 
     setTimeout(() => {
-      const botResponse = getBotResponse(userMessage, chatState)
-      addMessage(botResponse, 'bot')
-      setChatState(prev => updateChatState(userMessage, prev))
+      const lower = trimmed.toLowerCase()
+
+      // If we are in the middle of the guided flow
+      if (convState.step === 'askLocation') {
+        setConvState((prev) => ({
+          ...prev,
+          step: 'askBudget',
+          preferredLocation: trimmed,
+        }))
+        setIsTyping(false)
+        addMessage(
+          'Great, noted your preferred location.\n\nWhat is your approximate total budget for the full course? (For example: "under 8L" or "10 lakh".)',
+          'bot',
+        )
+        return
+      }
+
+      if (convState.step === 'askBudget') {
+        const budget = parseBudgetFromText(lower)
+
+        if (!budget) {
+          setIsTyping(false)
+          addMessage(
+            'I could not understand the budget clearly.\nPlease mention it like "under 8L", "6 lakh", or "below 10 lakhs".',
+            'bot',
+          )
+          return
+        }
+
+        const finalQuery = `${convState.baseQuery ?? ''} in ${convState.preferredLocation ?? ''
+          } under ${budget} lakh`
+
+        const answer = formatAnswer(finalQuery, {
+          lockedCity: convState.preferredLocation,
+          lockedBudget: budget,
+        })
+
+        setConvState({ step: 'idle' })
+        setIsTyping(false)
+        addMessage(
+          `Great, I have everything I need now:\n• Course: ${convState.courseLabel ?? 'Not specified'}\n• Location: ${convState.preferredLocation ?? 'Not specified'
+          }\n• Budget: up to ₹${budget} Lakh\n${convState.ownership ? `• College type: ${convState.ownership}` : ''
+          }`,
+          'bot',
+        )
+        addMessage(answer, 'bot')
+        return
+      }
+
+      // If user already included everything in one query → direct answer
+      const filters = parseQueryFilters(lower)
+      if (filters.preferredCity && filters.maxFeesLakh) {
+        const answer = formatAnswer(trimmed, {
+          lockedCity: filters.preferredCity,
+          lockedBudget: filters.maxFeesLakh,
+        })
+        setIsTyping(false)
+        addMessage(answer, 'bot')
+        return
+      }
+
+      // Start guided flow if looks like a "find college" query
+      const { courseLabel, ownership } = detectCourseAndOwnership(lower)
+
+      if (courseLabel) {
+        // Ask for location next
+        setConvState({
+          step: 'askLocation',
+          baseQuery: trimmed,
+          courseLabel,
+          ownership,
+        })
+        setIsTyping(false)
+        addMessage(
+          `Nice, you are looking for ${courseLabel.toLowerCase()} colleges${ownership ? ` (${ownership.toLowerCase()})` : ''
+          }.\n\nWhich city or state do you prefer?`,
+          'bot',
+        )
+        return
+      }
+
+      // Fallback – normal RAG answer
+      const answer = formatAnswer(trimmed)
       setIsTyping(false)
-    }, 1000)
+      addMessage(answer, 'bot')
+    }, 600)
   }
 
-  const handleQuickReply = (reply: string) => {
-    setInputText(reply)
-    setTimeout(() => handleSendMessage(), 100)
+  const handleSuggestedClick = (q: string) => {
+    setInputText(q)
+    setTimeout(() => {
+      handleSend()
+    }, 120)
   }
 
-  const getQuickReplies = () => {
-    switch (chatState.step) {
-      case 'greeting':
-        return COURSE_OPTIONS
-      case 'course':
-        return CITY_OPTIONS
-      case 'city':
-        return BUDGET_OPTIONS
-      case 'budget':
-        return ['Placements', 'Campus Life']
-      default:
-        return []
+  // ---------- Closed teaser strip ----------
+
+  if (!isOpen && showTeaser) {
+    const openChat = () => {
+      setIsOpen(true)
+      if (messages.length === 0) {
+        addMessage(
+          'Hi, I am Collegia Buddy. Ask me anything about colleges, fees, placements or admissions.\n\nYou can start with:\n• Best private engineering colleges under 10L\n• Top government medical colleges in India\n• Best ROI MBA colleges',
+          'bot',
+        )
+      }
     }
+
+    return (
+      <div className="chatbot-root fixed bottom-6 right-6 z-50">
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={openChat}
+          onKeyDown={(e) => e.key === 'Enter' && openChat()}
+          className="flex items-center gap-3 px-5 py-3 rounded-full bg-gradient-to-r from-[#4C1D95] via-[#7C3AED] to-[#0EA5E9] text-white shadow-[0_16px_40px_rgba(15,23,42,0.55)] hover:shadow-[0_20px_60px_rgba(15,23,42,0.7)] hover:scale-105 transition-all duration-300 cursor-pointer"
+        >
+          {/* Bot avatar */}
+          <div className="relative w-12 h-12">
+            <div className="absolute inset-0 rounded-2xl bg-white/20 blur-sm" />
+            <div className="relative w-full h-full rounded-2xl bg-white flex items-center justify-center shadow-md">
+              <Image
+                src="/images/collegia-bot.png"
+                alt="Collegia Buddy"
+                width={40}
+                height={40}
+                className="object-contain"
+              />
+            </div>
+            {/* online dot */}
+            <div className="absolute -right-0.5 -bottom-0.5">
+              <span className="relative flex h-3.5 w-3.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex h-3.5 w-3.5 rounded-full bg-emerald-500 border-2 border-white" />
+              </span>
+            </div>
+          </div>
+
+          <div className="text-left">
+            <div className="text-xs font-medium opacity-90">
+              Get instant answers to your college queries
+            </div>
+            <div className="text-sm font-semibold">Ask Collegia Buddy</div>
+          </div>
+
+          <span
+            onClick={(e) => {
+              e.stopPropagation()
+              setShowTeaser(false)
+            }}
+            className="ml-1 text-white/80 hover:text-white cursor-pointer"
+          >
+            <X className="h-4 w-4" />
+          </span>
+        </div>
+      </div>
+    )
   }
 
-  if (!isOpen) {
+  // ---------- Closed round bubble (after teaser dismissed) ----------
+
+  if (!isOpen && !showTeaser) {
     return (
       <div className="fixed bottom-6 right-6 z-50">
         <button
-          onClick={() => setIsOpen(true)}
-          className="group bg-gradient-to-r from-[#8A2BE2] to-[#00B4D8] hover:from-[#9B3BF3] hover:to-[#0BC5E9] text-white shadow-[0_8px_30px_rgba(138,43,226,0.4)] hover:shadow-[0_12px_40px_rgba(138,43,226,0.6)] rounded-full px-6 py-4 flex items-center space-x-3 transition-all duration-300 hover:scale-110 animate-bounce"
+          onClick={() => {
+            setIsOpen(true)
+            if (messages.length === 0) {
+              addMessage(
+                'Hi, I am Collegia Buddy. Ask me anything about colleges, fees, placements or admissions.',
+                'bot',
+              )
+            }
+          }}
+          className="relative w-16 h-16 rounded-full bg-gradient-to-br from-[#4C1D95] via-[#7C3AED] to-[#0EA5E9] shadow-[0_18px_45px_rgba(15,23,42,0.55)] hover:shadow-[0_24px_60px_rgba(15,23,42,0.7)] hover:scale-110 transition-all duration-300 flex items-center justify-center"
         >
-          <span className="text-2xl">💬</span>
-          <span className="font-semibold">Talk to your College Buddy!</span>
+          <div className="absolute inset-2 rounded-full border border-white/30" />
+          <div className="relative w-11 h-11 rounded-full bg-white flex items-center justify-center shadow-md">
+            <Image
+              src="/images/collegia-bot.png"
+              alt="Collegia Buddy"
+              width={40}
+              height={40}
+              className="object-contain"
+            />
+          </div>
+
+          {/* online dot */}
+          <div className="absolute -right-0.5 -bottom-0.5">
+            <span className="relative flex h-3.5 w-3.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex h-3.5 w-3.5 rounded-full bg-emerald-500 border-2 border-white" />
+            </span>
+          </div>
         </button>
       </div>
     )
   }
 
+  // ---------- Open chat window ----------
+
   return (
-    <div className="fixed bottom-6 right-6 z-50 w-96 h-[600px] bg-white/90 backdrop-blur-lg rounded-3xl shadow-[0_20px_60px_rgba(138,43,226,0.3)] border border-white/60 flex flex-col overflow-hidden">
+    <div className="fixed bottom-6 right-6 z-50 w-96 h-[600px] bg-white/95 backdrop-blur-xl rounded-3xl shadow-[0_20px_60px_rgba(15,23,42,0.35)] border border-white/70 flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="bg-gradient-to-r from-[#C9A7EB]/90 via-[#00B4D8]/90 to-[#FFD6E0]/90 backdrop-blur-sm text-white p-4 flex items-center justify-between">
+      <div className="bg-gradient-to-r from-[#4C1D95] via-[#7C3AED] to-[#0EA5E9] text-white p-4 flex items-center justify-between">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center">
-            <span className="text-2xl">🤖</span>
+          <div className="relative w-12 h-12">
+            <div className="absolute inset-0 rounded-2xl bg-white/20 blur-sm" />
+            <div className="relative w-full h-full rounded-2xl bg-white flex items-center justify-center shadow-md">
+              <Image
+                src="/images/collegia-bot.png"
+                alt="Collegia Buddy"
+                width={44}
+                height={44}
+                className="object-contain"
+              />
+            </div>
+            <div className="absolute -right-0.5 -bottom-0.5">
+              <span className="relative flex h-3.5 w-3.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex h-3.5 w-3.5 rounded-full bg-emerald-500 border-2 border-white" />
+              </span>
+            </div>
           </div>
           <div>
-            <h3 className="font-semibold text-lg">College Buddy</h3>
-            <p className="text-xs opacity-90">Your friendly guide 💬</p>
+            <h3 className="font-semibold text-sm">Collegia Buddy</h3>
+            <p className="text-[11px] opacity-90">
+              Ask anything about colleges, fees and placements
+            </p>
           </div>
         </div>
         <button
           onClick={() => setIsOpen(false)}
-          className="text-white hover:bg-white/20 rounded-full p-2 transition-all"
+          className="text-white/80 hover:bg-white/15 rounded-full p-1.5 transition-all"
         >
           <X className="h-4 w-4" />
         </button>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-white/50 to-white/80">
-        {messages.length === 0 && (
-          <div className="text-center py-8">
-            <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-r from-[#C9A7EB]/20 to-[#00B4D8]/20 rounded-full flex items-center justify-center">
-              <span className="text-4xl">🤖</span>
-            </div>
-            <p className="font-semibold text-lg text-[#2F2F2F]">Hey! 👋 Main hoon Buddy</p>
-            <p className="text-sm text-[#2F2F2F]/60">Aapka college selection guide</p>
-          </div>
-        )}
-        
-        {messages.map((message) => (
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-slate-50 to-white">
+
+        {messages.map((m) => (
           <div
-            key={message.id}
-            className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+            key={m.id}
+            className={`flex mb-3 ${m.sender === "user" ? "justify-end" : "justify-start"}`}
           >
-            <div className={`flex items-start space-x-2 max-w-[80%] ${message.sender === 'user' ? 'flex-row-reverse space-x-reverse' : ''}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${message.sender === 'user' ? 'bg-gradient-to-r from-[#8A2BE2] to-[#00B4D8]' : 'bg-white/60 backdrop-blur-sm border border-white/80'}`}>
-                <span className="text-lg">{message.sender === 'user' ? '👤' : '🤖'}</span>
+            <div
+              className={`flex items-start gap-2 max-w-[80%] ${m.sender === "user" ? "flex-row-reverse" : ""
+                }`}
+            >
+              {/* Avatar */}
+              <div className="w-9 h-9 rounded-full overflow-hidden border border-gray-200 bg-white shadow-sm flex-shrink-0">
+                {m.sender === "user" ? (
+                  <Image
+                    src="/images/User.png"
+                    alt="User avatar"
+                    width={36}
+                    height={36}
+                    className="object-cover"
+                  />
+                ) : (
+                  <Image
+                    src="/images/AI-Bot.png"
+                    alt="Collegia Bot"
+                    width={36}
+                    height={36}
+                    className="object-contain p-1"
+                  />
+                )}
               </div>
-              <div className={message.sender === 'user' ? 'bg-gradient-to-r from-[#8A2BE2] to-[#00B4D8] text-white rounded-2xl rounded-tr-none px-4 py-3 shadow-md' : 'bg-white/80 backdrop-blur-sm border border-white/60 rounded-2xl rounded-tl-none px-4 py-3 shadow-md'}>
-                <p className="text-sm whitespace-pre-line">{message.text}</p>
-                <p className={`text-xs mt-1 ${message.sender === 'user' ? 'text-white/70' : 'text-[#2F2F2F]/50'}`}>
-                  {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </p>
+
+              {/* Message Bubble */}
+              <div
+                className={`px-4 py-3 rounded-2xl shadow-sm text-sm whitespace-pre-line ${m.sender === "user"
+                    ? "bg-white text-gray-800 border border-gray-200 rounded-tr-none"
+                    : "bg-gradient-to-r from-[#4C1D95] via-[#7C3AED] to-[#0EA5E9] text-white rounded-tl-none shadow-md"
+                  }`}
+                style={{ lineHeight: "1.45" }}
+              >
+                {m.text}
+
+                {/* Timestamp */}
+                <div
+                  className={`text-[10px] mt-1 text-right ${m.sender === "user" ? "text-gray-400" : "text-white/70"
+                    }`}
+                >
+                  {m.timestamp.toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </div>
               </div>
             </div>
           </div>
         ))}
-        
+
+
+        {/* Quick suggestions when just opened */}
+        {messages.length === 1 && messages[0]?.sender === 'bot' && (
+          <div className="mt-1">
+            <p className="text-xs text-slate-500 mb-2">Try one of these:</p>
+            <div className="flex flex-wrap gap-2">
+              {SUGGESTED_QUERIES.map((q) => (
+                <button
+                  key={q}
+                  onClick={() => handleSuggestedClick(q)}
+                  className="px-3 py-2 rounded-full bg-slate-100 hover:bg-slate-200 text-[11px] border border-slate-200 transition"
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {isTyping && (
           <div className="flex justify-start">
             <div className="flex items-start space-x-2">
-              <div className="w-8 h-8 rounded-full bg-white/60 backdrop-blur-sm border border-white/80 flex items-center justify-center">
-                <span className="text-lg">🤖</span>
+              <div className="w-8 h-8 rounded-full bg-[#2563EB]/10 flex items-center justify-center text-xs font-semibold text-[#2563EB]">
+                AI
               </div>
-              <div className="bg-white/80 backdrop-blur-sm border border-white/60 rounded-2xl rounded-tl-none px-4 py-3 shadow-md">
+              <div className="bg-gradient-to-r from-[#4C1D95] via-[#7C3AED] to-[#0EA5E9] text-white rounded-2xl rounded-tl-none px-4 py-3 shadow-md">
                 <div className="flex space-x-1">
-                  <div className="w-2 h-2 bg-[#8A2BE2] rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-[#00B4D8] rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                  <div className="w-2 h-2 bg-[#FFD6E0] rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                  <div className="w-2 h-2 bg-white rounded-full animate-bounce" />
+                  <div
+                    className="w-2 h-2 bg-white/80 rounded-full animate-bounce"
+                    style={{ animationDelay: '0.1s' }}
+                  />
+                  <div
+                    className="w-2 h-2 bg-white/60 rounded-full animate-bounce"
+                    style={{ animationDelay: '0.2s' }}
+                  />
                 </div>
               </div>
             </div>
           </div>
         )}
+
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Quick Replies */}
-      {getQuickReplies().length > 0 && (
-        <div className="px-4 py-2 bg-white/60 backdrop-blur-sm border-t border-white/60">
-          <div className="flex flex-wrap gap-2">
-            {getQuickReplies().map((reply) => (
-              <button
-                key={reply}
-                onClick={() => handleQuickReply(reply)}
-                className="text-xs px-3 py-2 rounded-full bg-gradient-to-r from-[#C9A7EB]/20 to-[#00B4D8]/20 hover:from-[#C9A7EB]/30 hover:to-[#00B4D8]/30 border border-white/60 text-[#2F2F2F] font-medium transition-all hover:scale-105"
-              >
-                {reply}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Input */}
-      <div className="p-4 bg-white/80 backdrop-blur-sm border-t border-white/60">
+      <div className="p-3 bg-white border-t border-slate-100">
         <div className="flex space-x-2">
           <input
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            placeholder="Type your message..."
-            className="flex-1 px-4 py-3 rounded-2xl bg-white/60 border border-white/80 focus:outline-none focus:border-[#8A2BE2]/50 transition-all"
-            onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+            placeholder="Write your query about colleges here..."
+            className="flex-1 px-3 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/40 focus:border-[#7C3AED]/60"
+            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
           />
           <button
-            onClick={handleSendMessage}
-            className="px-4 py-3 rounded-2xl bg-gradient-to-r from-[#8A2BE2] to-[#00B4D8] text-white shadow-md hover:shadow-lg hover:scale-105 transition-all"
+            onClick={handleSend}
+            className="px-3 py-2.5 rounded-2xl bg-gradient-to-r from-[#4C1D95] via-[#7C3AED] to-[#0EA5E9] text-white shadow-md hover:shadow-lg hover:scale-105 transition-all"
           >
             <Send className="h-4 w-4" />
           </button>

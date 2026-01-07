@@ -1,107 +1,173 @@
 'use client'
 
-import { useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { ArrowRight, Sparkles, TrendingUp, Users, Search } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Search } from 'lucide-react'
+
+const HERO_IMAGES = [
+  '/images/hero-1.jpg',
+  '/images/hero-2.jpg',
+  '/images/hero-3.jpg',
+  '/images/hero-4.jpg',
+  '/images/hero-5.jpg',
+  '/images/hero-6.jpg',
+  '/images/hero-7.jpg',
+]
+
+const STREAM_PILLS = [
+  { label: 'Engineering (B.Tech)', q: 'b.tech' },
+  { label: 'MBA', q: 'mba' },
+  { label: 'MBBS', q: 'mbbs' },
+  { label: 'LAW', q: 'law' },
+  { label: 'Design', q: 'design' },
+  { label: 'Commerce', q: 'commerce' },
+]
 
 export default function HeroBanner() {
-  const [searchQuery, setSearchQuery] = useState('')
   const router = useRouter()
+  const [searchQuery, setSearchQuery] = useState('')
+  const [index, setIndex] = useState(0)
+  const [loaded, setLoaded] = useState<Record<string, boolean>>({})
+  const intervalRef = useRef<number | null>(null)
+
+  // Auto-slide carousel
+  useEffect(() => {
+    startRotation()
+    return () => stopRotation()
+  }, [])
+
+  const startRotation = () => {
+    stopRotation()
+    intervalRef.current = window.setInterval(() => {
+      setIndex((i) => (i + 1) % HERO_IMAGES.length)
+    }, 5000)
+  }
+
+  const stopRotation = () => {
+    if (intervalRef.current !== null) {
+      clearInterval(intervalRef.current)
+      intervalRef.current = null
+    }
+  }
 
   const handleSearch = (e?: React.FormEvent) => {
     if (e) e.preventDefault()
-    if (searchQuery.trim()) {
-      router.push(`/explore?q=${encodeURIComponent(searchQuery.trim())}`)
-    } else {
-      router.push('/explore')
-    }
+    if (!searchQuery.trim()) return
+    router.push(`/explore?q=${encodeURIComponent(searchQuery)}`)
   }
+
   return (
-    <div className="relative overflow-hidden bg-gradient-to-br from-[#C9A7EB]/30 via-[#00B4D8]/20 to-[#FFD6E0]/30 min-h-[80vh] flex items-center">
-      {/* Animated Background Shapes */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-[#C9A7EB]/20 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-[#00B4D8]/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
-        <div className="absolute top-1/2 left-1/3 w-80 h-80 bg-[#FFD6E0]/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
+    <section className="relative min-h-[78vh] flex items-center justify-center text-center">
+
+      {/* Background Carousel */}
+      <div className="absolute inset-0 -z-0">
+        {HERO_IMAGES.map((src, idx) => (
+          <div
+            key={src}
+            className="absolute inset-0 transition-opacity duration-700"
+            style={{
+              opacity: idx === index ? 1 : 0,
+            }}
+          >
+            <Image
+              src={src}
+              alt="hero background image"
+              fill
+              priority={idx === 0}
+              loading={idx === 0 ? 'eager' : 'lazy'}
+              style={{ objectFit: 'cover' }}
+            />
+          </div>
+        ))}
+
+        {/* Improve Text Visibility */}
+        <div className="absolute inset-0 bg-black/40 backdrop-blur-[1.5px] z-[1]" />
       </div>
 
-      <div className="relative container px-4 py-16 md:py-24">
-        <div className="max-w-4xl mx-auto text-center space-y-8">
-          {/* Badge */}
-          <div className="inline-flex items-center space-x-2 bg-white/60 backdrop-blur-sm border border-white/40 text-[#2F2F2F] px-6 py-3 rounded-full text-sm font-medium shadow-lg">
-            <span className="text-lg">🚀</span>
-            <span>100 Colleges. 100 Days. 1 Platform.</span>
-          </div>
+      {/* Content on top */}
+      <div className="relative mt-4 z-10 w-full px-4 py-20">
 
-          {/* Main Heading */}
-          <div className="space-y-6">
-            <h1 className="text-5xl md:text-7xl font-bold font-heading leading-tight">
-              <span className="text-[#2F2F2F]">Don't Get Influenced.</span>
-              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-[#8A2BE2] to-[#00B4D8] mt-2">
-                Get Informed.
-              </span>
-            </h1>
-            <p className="text-lg md:text-xl text-[#2F2F2F]/70 max-w-2xl mx-auto font-medium">
-              College ka asli review — bina filter. Real students. Real insights. Real decisions.
-            </p>
-          </div>
+        {/* Badge
+        <div className="inline-flex items-center space-x-2 bg-white/90 px-6 py-3 rounded-full shadow-md text-sm font-medium">
+          🚀 <span>100 Colleges. 100 Days. 1 Platform.</span>
+        </div> */}
 
-          {/* Search Bar - Prominent and centered */}
-          <div className="max-w-2xl mx-auto">
-            <form onSubmit={handleSearch} className="relative">
-              <Search className="absolute left-6 top-1/2 transform -translate-y-1/2 h-6 w-6 text-[#8A2BE2]" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Find your college (name, city, state...)"
-                className="w-full pl-16 pr-6 py-5 text-lg rounded-2xl bg-white/80 backdrop-blur-sm border-2 border-white/60 shadow-xl focus:outline-none focus:border-[#8A2BE2]/50 transition-all"
-              />
+        {/* Headings */}
+        <h1 className="mt-6 text-5xl md:text-7xl font-bold text-white drop-shadow-lg">
+          Don't Get Influenced.
+          <br />
+          <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#A78BFA] to-[#60A5FA]">
+            Get Informed.
+          </span>
+        </h1>
+
+        <p className="mt-4 text-white/90 text-lg drop-shadow max-w-2xl mx-auto">
+          College ka asli review — bina filter. Real students. Real insights. Real decisions.
+        </p>
+
+        {/* Search Bar */}
+        <div className="max-w-2xl mx-auto mt-8">
+          <form onSubmit={handleSearch} className="relative">
+            <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-6 w-6 text-[#8A2BE2]" />
+
+            <input
+              className="w-full pl-14 pr-6 py-4 rounded-2xl bg-white/95 shadow-lg text-lg"
+              placeholder="Find your college (name, city, state...)"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+
+            <button
+              type="submit"
+              className="absolute right-3 top-1/2 -translate-y-1/2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#8A2BE2] to-[#00B4D8] text-white font-semibold"
+            >
+              Search
+            </button>
+          </form>
+        </div>
+
+        {/* Popular Streams */}
+        <div className="mt-16 max-w-3xl mx-auto">
+          <p className="text-md text-white mb-3 font-medium text-center">
+            Popular streams
+          </p>
+
+          <div className="flex flex-wrap justify-center gap-3">
+            {STREAM_PILLS.map((p) => (
               <button
-                type="submit"
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 px-6 py-3 text-sm font-semibold text-white rounded-xl bg-gradient-to-r from-[#8A2BE2] to-[#00B4D8] shadow-md hover:shadow-lg hover:scale-105 transition-all"
+                key={p.q}
+                onClick={() => router.push(`/explore?q=${p.q}`)}
+                className="
+          group px-4 py-2 rounded-full
+          bg-white 
+          border border-slate-200 
+          text-slate-700 font-medium 
+          shadow-[0_2px_6px_rgba(138,43,226,0.15)]
+          transition-all duration-300
+          hover:border-[#8A2BE2]
+          hover:text-[#8A2BE2]
+          hover:shadow-[0_4px_14px_rgba(124,58,237,0.25)]
+          hover:-translate-y-[3px]
+          flex items-center gap-2 text-sm
+        "
               >
-                Search
+                <span
+                  className="
+            w-2 h-2 rounded-full
+            bg-gradient-to-br from-[#8A2BE2] to-[#00B4D8]
+            transition-transform duration-300
+            group-hover:scale-125
+          "
+                />
+                {p.label}
               </button>
-            </form>
-          </div>
-
-          {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <button
-              onClick={() => router.push('/explore')}
-              className="px-8 py-4 text-lg font-semibold text-white rounded-2xl bg-gradient-to-r from-[#8A2BE2] to-[#00B4D8] shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 flex items-center space-x-2"
-            >
-              <span>🎥</span>
-              <span>Watch Reviews</span>
-            </button>
-            <button
-              onClick={() => router.push('/compare')}
-              className="px-8 py-4 text-lg font-semibold text-[#2F2F2F] rounded-2xl bg-white/80 backdrop-blur-sm border-2 border-white/60 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 flex items-center space-x-2"
-            >
-              <span>⚖️</span>
-              <span>Compare Colleges</span>
-            </button>
-          </div>
-
-          {/* Trust Indicators */}
-          <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-[#2F2F2F]/60">
-            <div className="flex items-center space-x-2 bg-white/40 backdrop-blur-sm px-4 py-2 rounded-full">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              <span>Verified Reviews</span>
-            </div>
-            <div className="flex items-center space-x-2 bg-white/40 backdrop-blur-sm px-4 py-2 rounded-full">
-              <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-              <span>Real Data</span>
-            </div>
-            <div className="flex items-center space-x-2 bg-white/40 backdrop-blur-sm px-4 py-2 rounded-full">
-              <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
-              <span>Student-Powered</span>
-            </div>
+            ))}
           </div>
         </div>
+
+
       </div>
-    </div>
+    </section>
   )
 }
