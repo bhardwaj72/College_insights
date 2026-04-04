@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { Instagram, Youtube } from 'lucide-react'
 import HeroBanner from '@/components/ui/hero-banner'
 import ReelsCarousel from '@/components/ui/reels-carousel'
 import CollegeCard, { College } from '@/components/ui/college-card'
@@ -94,22 +95,20 @@ export default function HomePage() {
           </p>
           <div className="flex items-center justify-center space-x-4 mt-4">
             <a
-              href="#"
-              className="w-10 h-10 rounded-full bg-[#C9A7EB]/20 hover:bg-[#C9A7EB]/30 flex items-center justify-center transition-all hover:scale-110"
+              href="https://www.instagram.com/college_insights01?igsh=MWhua3dyaXA4dXF2Nw%3D%3D&utm_source=qr"
+              className="w-10 h-10 rounded-full bg-[#E1306C]/20 hover:bg-[#E1306C]/30 flex items-center justify-center transition-all hover:scale-110"
+              target="_blank"
+              rel="noopener noreferrer"
             >
-              <span>🐦</span>
+              <Instagram className="h-5 w-5" />
             </a>
             <a
-              href="#"
-              className="w-10 h-10 rounded-full bg-[#00B4D8]/20 hover:bg-[#00B4D8]/30 flex items-center justify-center transition-all hover:scale-110"
+              href="https://youtube.com/@collegeinsights01?si=XLn3v_YDx-McENfS"
+              className="w-10 h-10 rounded-full bg-[#FF0000]/20 hover:bg-[#FF0000]/30 flex items-center justify-center transition-all hover:scale-110"
+              target="_blank"
+              rel="noopener noreferrer"
             >
-              <span>📘</span>
-            </a>
-            <a
-              href="#"
-              className="w-10 h-10 rounded-full bg-[#FFD6E0]/20 hover:bg-[#FFD6E0]/30 flex items-center justify-center transition-all hover:scale-110"
-            >
-              <span>📸</span>
+              <Youtube className="h-5 w-5" />
             </a>
           </div>
         </div>

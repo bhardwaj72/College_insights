@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 const TABS = [
     { key: 'govt', label: '🏛 Govt Exams', q: 'UPSC OR SSC OR Banking OR Government exam India' },
     { key: 'medical', label: '🩺 Medical', q: 'NEET OR MBBS OR Medical exam India' },
-    { key: 'mba', label: '📊 MBA', q: 'CAT OR XAT OR GMAT OR MBA admission India' },
+    { key: 'engineering', label: '⚙ Engineering', q: 'JEE OR Engineering exam India' },
     { key: 'defence', label: '🪖 Defence', q: 'NDA OR CDS OR AFCAT OR Defence exam India' }
 ]
 
@@ -23,15 +23,18 @@ export default function ExamHub() {
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
-        const apiKey = process.env.NEXT_PUBLIC_GNEWS_KEY
-
         setLoading(true)
         fetch(
-            `https://gnews.io/api/v4/search?q=${encodeURIComponent(tab.q)}&lang=en&country=in&max=15&apikey=${apiKey}`
+            `/api/news?q=${encodeURIComponent(tab.q)}&lang=en&country=in&max=15`
         )
             .then(res => res.json())
             .then(data => {
                 setNews(data.articles || [])
+                setLoading(false)
+            })
+            .catch(error => {
+                console.error('Failed to fetch news:', error)
+                setNews([])
                 setLoading(false)
             })
     }, [tab])

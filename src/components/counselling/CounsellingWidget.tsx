@@ -10,13 +10,22 @@ export default function CounsellingWidget() {
     const [countdown, setCountdown] = useState(5)
     const [showTip, setShowTip] = useState(true)
 
+    const [fullName, setFullName] = useState('')
+    const [mobileNumber, setMobileNumber] = useState('')
+    const [age, setAge] = useState('')
+    const [preferredLocation, setPreferredLocation] = useState('')
+    const [interestedStream, setInterestedStream] = useState('')
+    const [preferredCourse, setPreferredCourse] = useState('')
+
+    // Client should call app API which forwards to external spreadsheet webhook server-side.
+    const API_ENDPOINT = '/api/counselling'
+
     useEffect(() => {
         if (open) document.body.classList.add('counselling-open')
         else document.body.classList.remove('counselling-open')
 
         return () => document.body.classList.remove('counselling-open')
     }, [open])
-
 
     useEffect(() => {
         if (!submitted) return
@@ -108,20 +117,88 @@ export default function CounsellingWidget() {
                             </h3>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                <input className="c-input" placeholder="Full Name" />
-                                <input className="c-input" placeholder="Mobile Number" />
-                                <input className="c-input" placeholder="Age" />
-                                <input className="c-input" placeholder="City" />
-                                <input className="c-input" placeholder="Interested Stream" />
-                                <input className="c-input" placeholder="Preferred Course" />
+                                <input
+                                    className="c-input"
+                                    placeholder="Full Name"
+                                    value={fullName}
+                                    onChange={(e) => setFullName(e.target.value)}
+                                />
+                                <input
+                                    className="c-input"
+                                    placeholder="Mobile Number"
+                                    value={mobileNumber}
+                                    onChange={(e) => setMobileNumber(e.target.value)}
+                                />
+                                <input
+                                    className="c-input"
+                                    placeholder="Age"
+                                    value={age}
+                                    onChange={(e) => setAge(e.target.value)}
+                                />
+                                <input
+                                    className="c-input"
+                                    placeholder="Preferred Location"
+                                    value={preferredLocation}
+                                    onChange={(e) => setPreferredLocation(e.target.value)}
+                                />
+                                <input
+                                    className="c-input"
+                                    placeholder="Interested Stream"
+                                    value={interestedStream}
+                                    onChange={(e) => setInterestedStream(e.target.value)}
+                                />
+                                <input
+                                    className="c-input"
+                                    placeholder="Preferred Course"
+                                    value={preferredCourse}
+                                    onChange={(e) => setPreferredCourse(e.target.value)}
+                                />
                             </div>
 
                             <button
-                                onClick={() => setSubmitted(true)}
+                                onClick={async () => {
+                                    if (!fullName.trim() || !mobileNumber.trim() || !age.trim() || !preferredLocation.trim() || !interestedStream.trim() || !preferredCourse.trim()) {
+                                        alert('Please fill all fields before submitting.')
+                                        return
+                                    }
+
+                                    const row = {
+                                        'Full Name': fullName,
+                                        'Mobile Number': mobileNumber,
+                                        Age: age,
+                                        'Preferred Location': preferredLocation,
+                                        'Interested Stream': interestedStream,
+                                        'Preferred Course': preferredCourse,
+                                        'Submitted At': new Date().toISOString(),
+                                    }
+
+                                    try {
+                                        const res = await fetch(API_ENDPOINT, {
+                                            method: 'POST',
+                                            headers: {
+                                                'Content-Type': 'application/json',
+                                            },
+                                            body: JSON.stringify(row),
+                                        })
+
+                                        if (!res.ok) {
+                                            const payload = await res.json().catch(() => null)
+                                            console.warn('API /api/counselling failed:', res.status, payload)
+                                            alert('Counselling server could not submit. Please check backend configuration.')
+                                            return
+                                        }
+
+                                        setSubmitted(true)
+                                    } catch (err) {
+                                        console.error('Failed to submit counselling form via API:', err)
+                                        alert('Unable to submit right now - network issue or server offline.')
+                                    }
+                                }}
                                 className="mt-8 w-full py-4 rounded-xl bg-gradient-to-r from-[#8A2BE2] to-[#00B4D8] text-white font-semibold shadow-lg"
                             >
                                 Submit Request
                             </button>
+
                         </>
                     ) : (
                         <div className="text-center py-20">
