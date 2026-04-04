@@ -56,11 +56,11 @@ export default function ExamHub() {
                 </h2>
 
                 {/* Countdown Bar */}
-                <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-14">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 mb-8 sm:mb-14">
                     {EXAMS.map(e => (
-                        <div key={e.name} className="bg-white rounded-2xl p-4 shadow text-center">
-                            <p className="text-sm font-medium">{e.name}</p>
-                            <p className="text-3xl font-bold text-[#7C3AED]">{daysLeft(e.date)}</p>
+                        <div key={e.name} className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow text-center">
+                            <p className="text-xs sm:text-sm font-medium">{e.name}</p>
+                            <p className="text-2xl sm:text-3xl font-bold text-[#7C3AED]">{daysLeft(e.date)}</p>
                             <p className="text-xs text-slate-500">Days Left</p>
                         </div>
                     ))}
@@ -83,24 +83,24 @@ export default function ExamHub() {
                 </div>
 
                 {/* News Marquee */}
-                <div className="overflow-hidden py-8 relative group">
-                    <div className="absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-[#f7f8ff] to-transparent z-10 pointer-events-none" />
-                    <div className="absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-[#f7f8ff] to-transparent z-10 pointer-events-none" />
+                <div className="overflow-hidden py-4 sm:py-8 relative group">
+                    <div className="absolute inset-y-0 left-0 w-8 sm:w-16 bg-gradient-to-r from-[#f7f8ff] to-transparent z-10 pointer-events-none" />
+                    <div className="absolute inset-y-0 right-0 w-8 sm:w-16 bg-gradient-to-l from-[#f7f8ff] to-transparent z-10 pointer-events-none" />
                     {loading && <p className="text-center text-slate-500">Loading live updates…</p>}
 
-                    <div className="flex gap-6 animate-marquee whitespace-nowrap">
+                    <div className="flex gap-3 sm:gap-6 animate-marquee whitespace-nowrap">
                         {news.concat(news).map((n, i) => (
                             <a
                                 key={i}
                                 href={n.url}
                                 target="_blank"
-                                className="min-w-[360px] p-5 bg-white rounded-2xl shadow-lg hover:shadow-2xl transition"
+                                className="min-w-[280px] sm:min-w-[360px] p-3 sm:p-5 bg-white rounded-xl sm:rounded-2xl shadow-lg hover:shadow-2xl transition"
                             >
                                 <div className="flex gap-2 mb-2">
                                     <span className="px-2 py-1 text-xs bg-red-500 text-white rounded">NEW</span>
                                     <span className="px-2 py-1 text-xs bg-[#00B4D8] text-white rounded">LIVE</span>
                                 </div>
-                                <p className="text-sm font-medium line-clamp-2">{n.title}</p>
+                                <p className="text-xs sm:text-sm font-medium line-clamp-2">{n.title}</p>
                                 <p className="text-xs mt-2 text-slate-500">
                                     {n.source?.name}
                                 </p>

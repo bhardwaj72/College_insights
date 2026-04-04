@@ -58,7 +58,7 @@ export default function HeroBanner() {
   }
 
   return (
-    <section className="relative min-h-[78vh] flex items-center justify-center text-center">
+    <section className="relative min-h-screen flex items-center justify-center text-center">
 
       {/* Background Carousel */}
       <div className="absolute inset-0 -z-0">
@@ -94,7 +94,7 @@ export default function HeroBanner() {
         </div> */}
 
         {/* Headings */}
-        <h1 className="mt-6 text-5xl md:text-7xl font-bold text-white drop-shadow-lg">
+        <h1 className="mt-6 text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold text-white drop-shadow-lg leading-tight">
           Don't Get Influenced.
           <br />
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#A78BFA] to-[#60A5FA]">
@@ -102,17 +102,17 @@ export default function HeroBanner() {
           </span>
         </h1>
 
-        <p className="mt-4 text-white/90 text-lg drop-shadow max-w-2xl mx-auto">
+        <p className="mt-4 text-white/90 text-sm sm:text-base md:text-lg drop-shadow max-w-2xl mx-auto px-4">
           College ka asli review — bina filter. Real students. Real insights. Real decisions.
         </p>
 
         {/* Search Bar */}
-        <div className="max-w-2xl mx-auto mt-8">
+        <div className="max-w-2xl mx-auto mt-6 sm:mt-8 px-4">
           <form onSubmit={handleSearch} className="relative">
-            <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-6 w-6 text-[#8A2BE2]" />
+            <Search className="absolute left-3 sm:left-5 top-1/2 -translate-y-1/2 h-5 w-5 sm:h-6 sm:w-6 text-[#8A2BE2]" />
 
             <input
-              className="w-full pl-14 pr-6 py-4 rounded-2xl bg-white/95 shadow-lg text-lg"
+              className="w-full pl-10 sm:pl-14 pr-20 sm:pr-6 py-3 sm:py-4 rounded-xl sm:rounded-2xl bg-white/95 shadow-lg text-base sm:text-lg"
               placeholder="Find your college (name, city, state...)"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -120,41 +120,41 @@ export default function HeroBanner() {
 
             <button
               type="submit"
-              className="absolute right-3 top-1/2 -translate-y-1/2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#8A2BE2] to-[#00B4D8] text-white font-semibold"
+              className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 px-3 sm:px-6 py-2 sm:py-2.5 rounded-lg sm:rounded-xl bg-gradient-to-r from-[#8A2BE2] to-[#00B4D8] text-white font-semibold text-sm sm:text-base"
             >
-              Search
+              <span className="hidden sm:inline">Search</span>
+              <Search className="h-4 w-4 sm:hidden" />
             </button>
           </form>
         </div>
 
         {/* Popular Streams */}
-        <div className="mt-16 max-w-3xl mx-auto">
-          <p className="text-md text-white mb-3 font-medium text-center">
+        <div className="mt-8 sm:mt-16 max-w-3xl mx-auto px-4">
+          <p className="text-sm sm:text-md text-white mb-3 font-medium text-center">
             Popular streams
           </p>
 
-          <div className="flex flex-wrap justify-center gap-3">
+          <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
             {STREAM_PILLS.map((p) => (
               <button
                 key={p.q}
                 onClick={() => router.push(`/explore?q=${p.q}`)}
                 className="
-          group px-4 py-2 rounded-full
-          bg-white 
-          border border-slate-200 
-          text-slate-700 font-medium 
+          group px-3 sm:px-4 py-1.5 sm:py-2 rounded-full
+          bg-white
+          border border-slate-200
+          text-slate-700 font-medium
           shadow-[0_2px_6px_rgba(138,43,226,0.15)]
           transition-all duration-300
           hover:border-[#8A2BE2]
           hover:text-[#8A2BE2]
           hover:shadow-[0_4px_14px_rgba(124,58,237,0.25)]
           hover:-translate-y-[3px]
-          flex items-center gap-2 text-sm
+          flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm
         "
               >
                 <span
-                  className="
-            w-2 h-2 rounded-full
+                  className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full
             bg-gradient-to-br from-[#8A2BE2] to-[#00B4D8]
             transition-transform duration-300
             group-hover:scale-125
