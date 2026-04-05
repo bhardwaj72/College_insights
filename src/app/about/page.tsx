@@ -4,9 +4,7 @@ import { Card, CardContent } from '@/components/ui/card'
 export default function AboutPage() {
   const team = [
     { name: 'Rahul', role: 'Founder & CEO', emoji: '👨‍💼' },
-    { name: 'Priya', role: 'Head of Content', emoji: '👩‍💻' },
     { name: 'Arjun', role: 'Tech Lead', emoji: '👨‍🔧' },
-    { name: 'Sneha', role: 'Community Manager', emoji: '👩‍🎓' }
   ]
 
   const values = [
@@ -100,14 +98,14 @@ export default function AboutPage() {
           <h2 className="text-3xl font-bold font-heading text-center mb-12 text-[#2F2F2F]">
             Meet the Team
           </h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-2 gap-6">
             {team.map((member, idx) => (
               <Card
                 key={idx}
                 className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/60 shadow-[0_6px_20px_rgba(0,0,0,0.08)] hover:shadow-[0_12px_30px_rgba(138,43,226,0.15)] hover:-translate-y-2 transition-all duration-300"
               >
-                <CardContent className="p-6 text-center">
-                  <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-r from-[#C9A7EB]/20 to-[#00B4D8]/20 rounded-full flex items-center justify-center text-4xl">
+                <CardContent className="p-8 text-center">
+                  <div className="w-32 h-32 mx-auto mb-6 bg-gradient-to-r from-[#C9A7EB]/20 to-[#00B4D8]/20 rounded-full flex items-center justify-center text-5xl">
                     {member.emoji}
                   </div>
                   <h3 className="font-bold text-lg text-[#2F2F2F]">{member.name}</h3>

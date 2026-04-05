@@ -30,8 +30,8 @@ export default function ContactPage() {
               </div>
               <h3 className="font-bold text-lg mb-2 text-[#2F2F2F]">Email Us</h3>
               <p className="text-sm text-[#2F2F2F]/60 mb-3">Drop us a line anytime</p>
-              <a href="mailto:hello@collegeinsights.in" className="text-[#8A2BE2] font-medium hover:underline">
-                hello@collegeinsights.in
+              <a href="mailto:collegeinsights82@gmail.com" className="text-[#8A2BE2] font-medium hover:underline">
+                collegeinsights82@gmail.com
               </a>
             </CardContent>
           </Card>
@@ -57,7 +57,7 @@ export default function ContactPage() {
               <h3 className="font-bold text-lg mb-2 text-[#2F2F2F]">Visit Us</h3>
               <p className="text-sm text-[#2F2F2F]/60 mb-3">Come say hi</p>
               <p className="text-sm text-[#2F2F2F]/70">
-                Bangalore, India
+                Dehradun, India
               </p>
             </CardContent>
           </Card>
