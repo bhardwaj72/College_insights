@@ -6,6 +6,11 @@ import localFont from "next/font/local";
 export const metadata: Metadata = {
   title: "College Insights - Honest College Reviews & Rankings",
   description: "Discover authentic college reviews, compare top Indian colleges, and make informed decisions about your education. Real student insights, placement data, and campus reviews.",
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon-16x16.png",
+    apple: "/apple-touch-icon.png",
+  },
   keywords: "college reviews, engineering colleges, MBA colleges, college rankings, placements, campus life",
   authors: [{ name: "College Insights Team" }],
   openGraph: {
